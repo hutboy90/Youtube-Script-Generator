@@ -1,0 +1,16 @@
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  padding: 1rem 2rem;
+  text-align: right;
+}
+
+.header-title {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1rem;
+}
+

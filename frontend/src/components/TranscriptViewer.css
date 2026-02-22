@@ -1,0 +1,78 @@
+.transcript-viewer {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.transcript-viewer.empty {
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.transcript-viewer.error {
+  color: #ff5252;
+}
+
+.transcript-header {
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.transcript-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #fff;
+}
+
+.transcript-header .author {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.transcript-content {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 500px;
+}
+
+.transcript-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.transcript-table td {
+  padding: 0.4rem 0.5rem;
+  vertical-align: top;
+  font-size: 0.9rem;
+}
+
+.transcript-table .timestamp {
+  color: rgba(255, 255, 255, 0.5);
+  white-space: nowrap;
+  width: 120px;
+  font-family: monospace;
+}
+
+.transcript-table .text {
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.5;
+}
+
+.loading-spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #7928ca;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-top: 1rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+

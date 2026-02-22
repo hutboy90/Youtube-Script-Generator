@@ -1,0 +1,82 @@
+.video-card {
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.05);
+  transition: all 0.2s;
+  border: 3px solid transparent;
+}
+
+.video-card.clickable {
+  cursor: pointer;
+}
+
+.video-card.clickable:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.02);
+}
+
+.video-card.completed {
+  border-color: rgba(0, 200, 83, 0.4);
+}
+
+.video-card.selected {
+  border-color: #ff9800 !important;
+  box-shadow: 0 0 20px rgba(255, 152, 0, 0.5);
+  transform: scale(1.03);
+  z-index: 1;
+}
+
+.video-card.selected .video-title {
+  color: #ff9800;
+  font-weight: 600;
+}
+
+.thumbnail-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/9;
+}
+
+.thumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.error-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 82, 82, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 600;
+}
+
+.progress-bar-container {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.progress-bar {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.progress-bar.pending {
+  width: 0%;
+}
+
+.video-title {
+  padding: 0.5rem;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.8);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
