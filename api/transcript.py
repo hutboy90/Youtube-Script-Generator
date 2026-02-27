@@ -24,10 +24,10 @@ def format_timestamp(seconds):
     return f"{hours:02d}:{minutes:02d}:{secs:02d}.{ms:03d}"
 
 def get_transcript(video_id):
-    """Fetch transcript for a video"""
+    """Fetch transcript for a video using user's IP directly"""
     try:
         api = YouTubeTranscriptApi()
-        
+
         # Try different languages
         transcript = None
         for lang in ['vi', 'en']:
@@ -36,31 +36,35 @@ def get_transcript(video_id):
                 break
             except:
                 continue
-        
+
         # If no preferred language, get any available
         if transcript is None:
             transcript_list = api.list(video_id)
             available = list(transcript_list)
             if available:
                 transcript = available[0].fetch()
-        
+
         if transcript is None:
-            return {"success": False, "error": "No transcript available"}
-        
+            return {"success": False, "error": "No transcript available for this video"}
+
         snippets = list(transcript.snippets)
         result = []
-        
+
         for seg in snippets:
             result.append({
                 "timestamp": format_timestamp(seg.start),
                 "text": seg.text,
                 "duration": seg.duration
             })
-        
+
         return {"success": True, "transcript": result}
-        
+
     except Exception as e:
-        return {"success": False, "error": str(e)}
+        error_msg = str(e)
+        # Check for IP blocking error
+        if "IP" in error_msg or "blocked" in error_msg.lower() or "too many requests" in error_msg.lower():
+            return {"success": False, "error": "Your IP has been blocked by YouTube. Please try again later or use a VPN to change your IP address."}
+        return {"success": False, "error": error_msg}
 
 def get_video_info(video_id):
     """Get video info using oEmbed"""

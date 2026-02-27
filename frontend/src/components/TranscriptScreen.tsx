@@ -61,20 +61,21 @@ function TranscriptScreen({ videos, setVideos, onBack }: TranscriptScreenProps) 
     const video = videos[index];
     if (video.status !== 'pending') return;
 
-    setVideos(prev => prev.map((v, i) => 
+    setVideos(prev => prev.map((v, i) =>
       i === index ? { ...v, status: 'downloading', progress: 10 } : v
     ));
 
     try {
       // Simulate progress
       const progressInterval = setInterval(() => {
-        setVideos(prev => prev.map((v, i) => 
+        setVideos(prev => prev.map((v, i) =>
           i === index && v.status === 'downloading' && v.progress < 90
             ? { ...v, progress: v.progress + 10 }
             : v
         ));
       }, 200);
 
+      // Fetch from local backend (uses user's IP)
       const response = await fetch('/api/transcript', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -86,17 +87,17 @@ function TranscriptScreen({ videos, setVideos, onBack }: TranscriptScreenProps) 
       const result = await response.json();
 
       if (result.success) {
-        setVideos(prev => prev.map((v, i) => 
+        setVideos(prev => prev.map((v, i) =>
           i === index ? { ...v, status: 'completed', progress: 100, data: result.data } : v
         ));
         setSelectedVideoIndex(index);
       } else {
-        setVideos(prev => prev.map((v, i) => 
+        setVideos(prev => prev.map((v, i) =>
           i === index ? { ...v, status: 'error', error: result.error } : v
         ));
       }
     } catch (error) {
-      setVideos(prev => prev.map((v, i) => 
+      setVideos(prev => prev.map((v, i) =>
         i === index ? { ...v, status: 'error', error: 'Network error' } : v
       ));
     }
