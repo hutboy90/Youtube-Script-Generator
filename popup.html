@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YT Subtitle Downloader</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="24" height="24" rx="4" fill="#FF0000"/>
+          <polygon points="10,7 17,12 10,17" fill="white"/>
+        </svg>
+        <h1>YT Subtitle Downloader</h1>
+      </div>
+    </header>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" data-tab="current">Current Video</button>
+      <button class="tab disabled" data-tab="batch" title="Coming in Phase 2">
+        Batch Download
+        <span class="badge">Soon</span>
+      </button>
+    </div>
+
+    <!-- Tab: Current Video (Phase 1) -->
+    <div class="tab-content active" id="tab-current">
+      <!-- Loading state -->
+      <div class="state" id="state-loading">
+        <div class="spinner"></div>
+        <p>Detecting video...</p>
+      </div>
+
+      <!-- Error state -->
+      <div class="state hidden" id="state-error">
+        <div class="error-icon">!</div>
+        <p id="error-message">Not on a YouTube video page</p>
+      </div>
+
+      <!-- No subtitles state -->
+      <div class="state hidden" id="state-no-subs">
+        <div class="warning-icon">CC</div>
+        <p class="video-title-small" id="no-subs-title"></p>
+        <p>No subtitles available for this video</p>
+      </div>
+
+      <!-- Ready state -->
+      <div class="state hidden" id="state-ready">
+        <div class="video-info">
+          <p class="video-title" id="video-title"></p>
+          <p class="video-status" id="track-count"></p>
+        </div>
+
+        <div class="form-group">
+          <label for="language-select">Language</label>
+          <select id="language-select"></select>
+        </div>
+
+        <div class="form-group">
+          <label>Format</label>
+          <div class="format-buttons">
+            <button class="format-btn active" data-format="txt">TXT</button>
+            <button class="format-btn" data-format="srt">SRT</button>
+            <button class="format-btn" data-format="vtt">VTT</button>
+          </div>
+        </div>
+
+        <button class="download-btn" id="download-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Download Subtitle
+        </button>
+
+        <!-- Download status -->
+        <div class="download-status hidden" id="download-status">
+          <span class="status-icon" id="status-icon"></span>
+          <span id="status-text"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Batch Download (Phase 2 - placeholder) -->
+    <div class="tab-content" id="tab-batch">
+      <div class="phase2-placeholder">
+        <div class="phase2-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="1.5">
+            <rect x="3" y="3" width="7" height="7" rx="1"/>
+            <rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/>
+            <rect x="14" y="14" width="7" height="7" rx="1"/>
+          </svg>
+        </div>
+        <h3>Batch Download</h3>
+        <p>Download subtitles from multiple YouTube videos at once. Coming soon in Phase 2.</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
