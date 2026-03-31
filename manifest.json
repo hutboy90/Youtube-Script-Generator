@@ -3,7 +3,7 @@
   "name": "YT Subtitle Downloader",
   "version": "1.0.0",
   "description": "Download subtitles from YouTube videos in TXT, SRT, or VTT format",
-  "permissions": ["activeTab", "scripting", "downloads"],
+  "permissions": ["activeTab", "scripting", "downloads", "tabs"],
   "host_permissions": ["https://www.youtube.com/*"],
   "action": {
     "default_popup": "popup.html",

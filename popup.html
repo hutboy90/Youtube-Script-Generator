@@ -22,10 +22,7 @@
     <!-- Tabs -->
     <div class="tabs">
       <button class="tab active" data-tab="current">Current Video</button>
-      <button class="tab disabled" data-tab="batch" title="Coming in Phase 2">
-        Batch Download
-        <span class="badge">Soon</span>
-      </button>
+      <button class="tab" data-tab="batch">Batch Download</button>
     </div>
 
     <!-- Tab: Current Video (Phase 1) -->
@@ -87,19 +84,60 @@
       </div>
     </div>
 
-    <!-- Tab: Batch Download (Phase 2 - placeholder) -->
+    <!-- Tab: Batch Download (Phase 2) -->
     <div class="tab-content" id="tab-batch">
-      <div class="phase2-placeholder">
-        <div class="phase2-icon">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="1.5">
-            <rect x="3" y="3" width="7" height="7" rx="1"/>
-            <rect x="14" y="3" width="7" height="7" rx="1"/>
-            <rect x="3" y="14" width="7" height="7" rx="1"/>
-            <rect x="14" y="14" width="7" height="7" rx="1"/>
-          </svg>
+      <!-- Add URL input -->
+      <div class="batch-add">
+        <input type="text" id="batch-url-input" placeholder="Paste YouTube URL here..." />
+        <button id="batch-add-btn" title="Add URL">+</button>
+      </div>
+
+      <!-- Video list -->
+      <div class="batch-list" id="batch-list">
+        <!-- Items will be added dynamically -->
+      </div>
+      <div class="batch-empty hidden" id="batch-empty">
+        <p>No videos added yet. Paste a YouTube URL above or open a YouTube video page.</p>
+      </div>
+
+      <!-- Settings -->
+      <div class="batch-settings" id="batch-settings">
+        <div class="form-group">
+          <label for="batch-folder-name">Folder Name</label>
+          <input type="text" id="batch-folder-name" placeholder="YT Subtitles" value="YT Subtitles" />
         </div>
-        <h3>Batch Download</h3>
-        <p>Download subtitles from multiple YouTube videos at once. Coming soon in Phase 2.</p>
+
+        <div class="form-group">
+          <label>Format</label>
+          <div class="format-buttons">
+            <button class="batch-format-btn active" data-format="txt">TXT</button>
+            <button class="batch-format-btn" data-format="srt">SRT</button>
+            <button class="batch-format-btn" data-format="vtt">VTT</button>
+          </div>
+        </div>
+
+        <button class="download-btn" id="batch-download-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Download All (<span id="batch-count">0</span>)
+        </button>
+
+        <!-- Batch progress -->
+        <div class="batch-progress hidden" id="batch-progress">
+          <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
+          </div>
+          <p class="progress-text" id="progress-text">Processing...</p>
+        </div>
+
+        <!-- Batch status -->
+        <div class="download-status hidden" id="batch-status">
+          <span class="status-icon" id="batch-status-icon"></span>
+          <span id="batch-status-text"></span>
+        </div>
       </div>
     </div>
   </div>

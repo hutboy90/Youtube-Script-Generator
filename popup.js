@@ -464,3 +464,335 @@ function showStatus(type, message) {
 }
 
 function hideStatus() { elements.downloadStatus.classList.add('hidden'); }
+
+
+// ══════════════════════════════════════════════════════════════
+//  PHASE 2: Batch Download
+// ══════════════════════════════════════════════════════════════
+
+const batchElements = {
+  urlInput: document.getElementById('batch-url-input'),
+  addBtn: document.getElementById('batch-add-btn'),
+  list: document.getElementById('batch-list'),
+  empty: document.getElementById('batch-empty'),
+  folderName: document.getElementById('batch-folder-name'),
+  downloadBtn: document.getElementById('batch-download-btn'),
+  count: document.getElementById('batch-count'),
+  progress: document.getElementById('batch-progress'),
+  progressFill: document.getElementById('progress-fill'),
+  progressText: document.getElementById('progress-text'),
+  status: document.getElementById('batch-status'),
+  statusIcon: document.getElementById('batch-status-icon'),
+  statusText: document.getElementById('batch-status-text'),
+};
+
+let batchVideos = []; // { id, url, title, isCurrent }
+let batchFormat = 'txt';
+
+function initBatch() {
+  batchElements.addBtn.addEventListener('click', batchAddFromInput);
+  batchElements.urlInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') batchAddFromInput();
+  });
+  batchElements.downloadBtn.addEventListener('click', handleBatchDownload);
+
+  // Format buttons
+  document.querySelectorAll('.batch-format-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.batch-format-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      batchFormat = btn.dataset.format;
+    });
+  });
+
+  // Auto-add current video if on YouTube
+  autoAddCurrentVideo();
+}
+
+// Extract video ID from URL
+function extractVideoId(url) {
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes('youtube.com')) return u.searchParams.get('v');
+    if (u.hostname === 'youtu.be') return u.pathname.slice(1);
+  } catch {}
+  return null;
+}
+
+// Auto-add the current YouTube video
+async function autoAddCurrentVideo() {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab?.url?.includes('youtube.com/watch')) {
+      const videoId = extractVideoId(tab.url);
+      if (videoId && !batchVideos.find(v => v.id === videoId)) {
+        const title = captionData?.title || tab.title?.replace(' - YouTube', '') || 'Current Video';
+        batchVideos.push({ id: videoId, url: tab.url, title, isCurrent: true });
+        renderBatchList();
+      }
+    }
+  } catch {}
+}
+
+// Fetch video title from YouTube oEmbed API
+async function fetchVideoTitle(videoId) {
+  try {
+    const resp = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+    if (resp.ok) {
+      const data = await resp.json();
+      return data.title || `Video ${videoId}`;
+    }
+  } catch {}
+  return `Video ${videoId}`;
+}
+
+// Add URL from input
+async function batchAddFromInput() {
+  const raw = batchElements.urlInput.value.trim();
+  if (!raw) return;
+
+  // Support multiple URLs separated by newline or comma
+  const urls = raw.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+  const newIds = [];
+
+  for (const url of urls) {
+    const videoId = extractVideoId(url);
+    if (!videoId) {
+      showBatchStatus('error', `Invalid URL: ${url.substring(0, 50)}`);
+      continue;
+    }
+    if (batchVideos.find(v => v.id === videoId)) {
+      continue; // skip duplicates
+    }
+    // Add with placeholder title, fetch real title async
+    batchVideos.push({ id: videoId, url: `https://www.youtube.com/watch?v=${videoId}`, title: `Loading...`, isCurrent: false });
+    newIds.push(videoId);
+  }
+
+  batchElements.urlInput.value = '';
+  renderBatchList();
+
+  // Fetch titles in parallel
+  for (const videoId of newIds) {
+    fetchVideoTitle(videoId).then(title => {
+      const video = batchVideos.find(v => v.id === videoId);
+      if (video) {
+        video.title = title;
+        renderBatchList();
+      }
+    });
+  }
+}
+
+// Remove a video from the list
+function batchRemove(videoId) {
+  batchVideos = batchVideos.filter(v => v.id !== videoId);
+  renderBatchList();
+}
+
+// Render the batch video list
+function renderBatchList() {
+  batchElements.list.innerHTML = '';
+
+  if (batchVideos.length === 0) {
+    batchElements.empty.classList.remove('hidden');
+    batchElements.count.textContent = '0';
+    return;
+  }
+
+  batchElements.empty.classList.add('hidden');
+  batchElements.count.textContent = batchVideos.length;
+
+  for (const video of batchVideos) {
+    const item = document.createElement('div');
+    item.className = `batch-item${video.isCurrent ? ' current' : ''}`;
+    item.dataset.id = video.id;
+
+    item.innerHTML = `
+      <div class="batch-item-info">
+        <div class="batch-item-title">${escapeHtml(video.title)}</div>
+        <div class="batch-item-url">${video.id}</div>
+      </div>
+      ${video.isCurrent ? '<span class="batch-item-badge">NOW</span>' : ''}
+      <span class="batch-item-status" data-status-id="${video.id}"></span>
+      <button class="batch-item-remove" data-remove-id="${video.id}" title="Remove">&times;</button>
+    `;
+    batchElements.list.appendChild(item);
+  }
+
+  // Attach remove handlers
+  batchElements.list.querySelectorAll('.batch-item-remove').forEach(btn => {
+    btn.addEventListener('click', () => batchRemove(btn.dataset.removeId));
+  });
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// ─── Prepare current video subtitle content (reuses Phase 1 PoT, no download) ───
+async function prepareCurrentVideo(format) {
+  if (!captionData || !currentTabId) throw new Error('Current video not loaded');
+
+  const track = captionData.tracks.find(t => t.kind !== 'asr') || captionData.tracks[0];
+  if (!track) throw new Error('No subtitle tracks');
+
+  let fullUrl = track.baseUrl;
+  if (captionData.pot) fullUrl += '&potc=1&pot=' + encodeURIComponent(captionData.pot);
+  if (captionData.extraParams) fullUrl += '&' + captionData.extraParams;
+
+  const fetchResult = await executeInTab(currentTabId, async (url) => {
+    const fmts = [
+      { suffix: '&fmt=json3', type: 'json3' },
+      { suffix: '', type: 'xml' },
+    ];
+    for (const { suffix, type } of fmts) {
+      try {
+        const resp = await fetch(url + suffix, { credentials: 'include' });
+        if (!resp.ok) continue;
+        const text = await resp.text();
+        if (text && text.length > 10) return { content: text, format: type };
+      } catch {}
+    }
+    try {
+      const resources = performance.getEntriesByType('resource');
+      for (let i = resources.length - 1; i >= 0; i--) {
+        const r = resources[i];
+        if (r.name && r.name.includes('/api/timedtext') && r.name.includes('pot=')) {
+          let wUrl = r.name;
+          if (!wUrl.includes('fmt=json3')) wUrl += '&fmt=json3';
+          const resp = await fetch(wUrl, { credentials: 'include' });
+          const text = await resp.text();
+          if (text && text.length > 10) return { content: text, format: 'json3' };
+        }
+      }
+    } catch {}
+    return { error: 'empty' };
+  }, [fullUrl]);
+
+  if (!fetchResult || fetchResult.error) throw new Error('Failed to fetch subtitle');
+
+  let segments = fetchResult.format === 'json3' ? parseJSON3(fetchResult.content) : parseXML(fetchResult.content);
+  if (segments.length === 0) throw new Error('No segments');
+
+  let content;
+  switch (format) {
+    case 'srt': content = toSRT(segments); break;
+    case 'vtt': content = toVTT(segments); break;
+    default:    content = toTXT(segments); break;
+  }
+
+  return { title: captionData.title, content };
+}
+
+// ─── Batch Download Handler (2-phase: prepare all → download all at once) ───
+async function handleBatchDownload() {
+  if (batchVideos.length === 0) return;
+
+  const folderName = batchElements.folderName.value.trim() || 'YT Subtitles';
+  const format = batchFormat;
+
+  batchElements.downloadBtn.disabled = true;
+  batchElements.progress.classList.remove('hidden');
+  hideBatchStatus();
+
+  // ── Phase 1: Prepare all subtitle content ──
+  const prepared = []; // { title, content, videoId }
+  let failed = 0;
+
+  for (let i = 0; i < batchVideos.length; i++) {
+    const video = batchVideos[i];
+    const statusEl = document.querySelector(`[data-status-id="${video.id}"]`);
+
+    batchElements.progressFill.style.width = `${((i) / batchVideos.length) * 100}%`;
+    batchElements.progressText.textContent = `Preparing ${i + 1} of ${batchVideos.length}...`;
+
+    if (statusEl) {
+      statusEl.textContent = '...';
+      statusEl.className = 'batch-item-status loading';
+    }
+
+    try {
+      let result;
+
+      if (video.isCurrent && captionData?.pot) {
+        result = await prepareCurrentVideo(format);
+      } else {
+        // Background prepares content but does NOT download
+        result = await chrome.runtime.sendMessage({
+          action: 'batchPrepareVideo',
+          videoId: video.id,
+          videoUrl: video.url,
+          format,
+        });
+      }
+
+      if (result?.content) {
+        prepared.push({ title: result.title, content: result.content, videoId: video.id });
+        if (statusEl) {
+          statusEl.textContent = '\u2713';
+          statusEl.className = 'batch-item-status done';
+        }
+        if (result.title) {
+          video.title = result.title;
+          const titleEl = document.querySelector(`[data-id="${video.id}"] .batch-item-title`);
+          if (titleEl) titleEl.textContent = result.title;
+        }
+      } else {
+        failed++;
+        if (statusEl) {
+          statusEl.textContent = '\u2717';
+          statusEl.className = 'batch-item-status fail';
+          statusEl.title = result?.error || 'Failed';
+        }
+      }
+    } catch (err) {
+      failed++;
+      if (statusEl) {
+        statusEl.textContent = '\u2717';
+        statusEl.className = 'batch-item-status fail';
+        statusEl.title = err.message;
+      }
+    }
+  }
+
+  // ── Phase 2: Download all prepared files at once ──
+  if (prepared.length > 0) {
+    batchElements.progressText.textContent = `Downloading ${prepared.length} files...`;
+
+    const files = prepared.map(p => ({
+      filename: `${sanitizeFilename(folderName)}/${sanitizeFilename(p.title)}.${format}`,
+      dataUrl: 'data:text/plain;charset=utf-8,' + encodeURIComponent(p.content),
+    }));
+
+    await chrome.runtime.sendMessage({ action: 'batchDownloadAll', files });
+  }
+
+  batchElements.progressFill.style.width = '100%';
+  batchElements.progressText.textContent = `Done! ${prepared.length} succeeded, ${failed} failed.`;
+  batchElements.downloadBtn.disabled = false;
+
+  if (failed === 0 && prepared.length > 0) {
+    showBatchStatus('success', `All ${prepared.length} subtitles downloaded to "${folderName}/"!`);
+  } else if (prepared.length > 0) {
+    showBatchStatus('error', `${prepared.length} downloaded, ${failed} failed.`);
+  } else {
+    showBatchStatus('error', `All ${failed} failed.`);
+  }
+}
+
+function showBatchStatus(type, message) {
+  batchElements.status.classList.remove('hidden', 'success', 'error');
+  batchElements.status.classList.add(type);
+  batchElements.statusIcon.textContent = type === 'success' ? '\u2713' : '\u2717';
+  batchElements.statusText.textContent = message;
+}
+
+function hideBatchStatus() {
+  batchElements.status.classList.add('hidden');
+}
+
+// Initialize batch tab when DOM is ready
+document.addEventListener('DOMContentLoaded', initBatch);
